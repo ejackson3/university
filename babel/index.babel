@@ -1,0 +1,84 @@
+// Relevant links:
+// - Step-by-step guide https://goo.gl/sz7kRF
+// - This pen https://goo.gl/98wWXr
+// - Complete example https://goo.gl/aYazLi (DON'T CHEAT! xD)
+// - Server source code https://goo.gl/g2dcdC (not needed, but you might be interested)
+
+let Topics = ({topics, setTopic}) =>
+  <div>
+    <h4>Click on a topic...</h4>
+    <ul>
+      
+     {topics.map(topic => <li><a href="#" onClick={() => setTopic(topic)}>{topic}</a></li>)}
+      
+    </ul>
+  </div>
+
+let Messages = ({messages}) =>
+  <div>
+    <h4>Here's what people are saying...</h4>
+    <ul className="list-group">
+      {messages.map(message => <li className="list-group-item">{message}</li>)}
+    </ul>
+  </div>
+
+let Input = ({sendMessage}) =>
+  <form onSubmit={(event) => {
+    let form = event.target
+    sendMessage(form.elements.message.value)
+    form.reset()
+    event.preventDefault()
+  }}>
+    <input name="message" className="form-control" placeholder="Say something interesting (and not gross)..." />
+  </form>
+
+class App extends React.Component {
+    constructor(props) {
+    super(props)
+    this.state = {messages: [], topics: ['Classes', 'Leo and Una', 'The Fountain', 'fashion', 'walking while texting', 'various smells' ]}                            
+    this.socket = new Phoenix.Socket('wss://dreadful-spider-42903.herokuapp.com/socket')
+    this.socket.connect()
+   }
+
+  componentWillMount() {
+   fetch('https://dreadful-spider-42903.herokuapp.com/topics')
+    fetch()
+     .then(response => response.json())
+     .then(json => this.setState({topics: json.data}))
+  }
+setTopic(topic) {
+    if (this.channel) {
+    this.channel.leave()
+    }
+
+    this.channel = this.socket.channel(`chat:${topic}`)
+    this.channel.join()
+    this.channel.on('shout', ({data}) => this.receiveMessage(data))
+    this.receiveMessage(`Joining ${topic}...`)
+  }
+
+  receiveMessage(message) {
+    this.setState(
+      ({messages}) => ({messages: messages.concat(message)})
+    )
+  }
+  sendMessage(message) {
+   this.channel.push('shout', {data: message})
+  }
+  render() {
+  
+    return (
+      <div>
+        <Topics topics={this.state.topics} setTopic={(topic) =>             this.setTopic(topic)} />
+        <Messages messages={this.state.messages} />
+        <hr />
+        <Input sendMessage={(message) => this.sendMessage(message)} />
+      </div>
+    )
+  }
+}
+
+ReactDOM.render(
+  <App />,
+  document.getElementById('app'),
+)
